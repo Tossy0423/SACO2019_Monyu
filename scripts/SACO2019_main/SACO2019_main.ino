@@ -32,16 +32,9 @@ const String endpoint = "https://services.swpc.noaa.gov/products/solar-wind/plas
 WiFiClient httpsClient;
 PubSubClient mqttClient(httpsClient);
 
-//wifi
 
-// const char* ssid = "takudon";
-// const char* password = "utyuyear1444";
-
-//const char* ssid = "SpaceAppsWifi-C";
-//const char* password = "2019osaka";
-
-const char* ssid = "KLp5-ah";
-const char* password = "2SK2232_J334";
+const char* ssid = "SACO2019_Monyu";
+const char* password = "asdf1234";
 
 
 ///////////////////////////////////////
@@ -101,6 +94,8 @@ void loop() {
 
   if ((WiFi.status() == WL_CONNECTED)) {
 
+    digitalWrite(2, HIGH);
+
     HTTPClient http;
 
     http.begin(endpoint); //URLを指定
@@ -141,6 +136,8 @@ void loop() {
     }
 
     http.end(); //Free the resources
+  }else{
+    digitalWrite(2, LOW);
   }
 
   // delay(500);   //30秒おきに更新
