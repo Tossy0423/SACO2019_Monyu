@@ -1,6 +1,41 @@
+/*
+  Abstraction
+  ----------
+  This is the operating system of the ship life activity "Monyu"(Monyu-OS).
+  Monyu-OS receives plasma temperature sent from NOAA API.
+  A system that changes the color of Monyu depending on the degree of danger.
+  Monyu changes color, it informs staff working onboard and offboard about the degree of danger.
+
+  Development enviroment
+  ----------
+  OS
+    macOS Mojave 10.14.6
+
+  IDE
+    ArduinoIDE 1.8.8
+
+  MCU
+    ESP32s
+
+  Tactile sensor
+    Shokkakupod, Touchence
+
+
+  Team
+  ----------
+  ESP4589, Osaka, Japan
+  
+
+  Developer
+  ----------
+  Shunya TANAKA
+  Takuro MIKAMI
+
+  @International NASA Space Apps Challenge 2019
+    
+*/
 #include <iostream>
 #include <string>
-
 #include <WiFiClient.h>
 #include <WiFiClientSecure.h>
 #include <WiFi.h>
@@ -104,15 +139,12 @@ void loop() {
     if (httpCode > 0) { //返答がある場合
 
       String payload = http.getString();  //返答（JSON形式）を取得
-      // Serial.printf("httoCode=%d\n", httpCode);
-      // Serial.printf("payload=");
       Serial.print(payload);
       Serial.printf("\n");
 
 
       // pick up data
-      // mysubstr(&_pick_temperature, payload, 5);
-      // String.remove()
+
       payload.remove(0, 186);
       Serial.print(payload);
 
@@ -123,7 +155,7 @@ void loop() {
 
 
       temp = sent.toInt();
-      Serial.printf("hehe=%d", temp);
+      Serial.printf("temprature=%d", temp);
       Serial.print("\n");
 
 
