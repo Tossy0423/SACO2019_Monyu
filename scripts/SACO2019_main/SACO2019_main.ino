@@ -37,8 +37,11 @@ PubSubClient mqttClient(httpsClient);
 // const char* ssid = "takudon";
 // const char* password = "utyuyear1444";
 
-const char* ssid = "SpaceAppsWifi-C";
-const char* password = "2019osaka";
+//const char* ssid = "SpaceAppsWifi-C";
+//const char* password = "2019osaka";
+
+const char* ssid = "KLp5-ah";
+const char* password = "2SK2232_J334";
 
 
 ///////////////////////////////////////
@@ -195,10 +198,10 @@ void loop() {
     //Serial.print("\n");
 
     // Normalization
-    //_brightness_led[0] = map(_tactile_distance[0], 0, 6.0, 0, 255);
-    //_brightness_led[1] = map(_tactile_distance[1], 0, 6.0, 0, 255);
-    //_brightness_led[2] = map(_tactile_distance[2], 0, 6.0, 0, 255);
-    //_brightness_led[3] = map(_tactile_distance[3], 0, 6.0, 0, 255);
+    _brightness_led[0] = map(_tactile_distance[0], 0, 6.0, 0, 255);
+    _brightness_led[1] = map(_tactile_distance[1], 0, 6.0, 0, 255);
+    _brightness_led[2] = map(_tactile_distance[2], 0, 6.0, 0, 255);
+    _brightness_led[3] = map(_tactile_distance[3], 0, 6.0, 0, 255);
 
     //_brightness_led[0] = map(temp, 50000, 85000, 0, 255);
     //_brightness_led[1] = map(temp, 50000, 85000, 0, 255);
@@ -213,14 +216,14 @@ void loop() {
   if (60000 <= temp) {
     // Control led
     ledcWrite(0, 0);   // Blue
-    ledcWrite(1, 20);   // Green
-    ledcWrite(2, 255);   // Red
+    ledcWrite(1, 20 + _brightness_led[0]);   // Green
+    ledcWrite(2, 255 + _brightness_led[1]);   // Red
 
   } else if (50000 <= temp && temp <= 59999) {
 
     // Control led
-    ledcWrite(0, 255);
-    ledcWrite(1, 30);
+    ledcWrite(0, 255 + _brightness_led[2]);
+    ledcWrite(1, 30 + _brightness_led[3]);
     ledcWrite(2, 0);
 
   } else {
