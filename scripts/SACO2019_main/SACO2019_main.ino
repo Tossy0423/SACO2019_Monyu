@@ -24,7 +24,7 @@
   Team
   ----------
   ESP4589, Osaka, Japan
-  
+
 
   Developer
   ----------
@@ -32,8 +32,10 @@
   Takuro MIKAMI
 
   @International NASA Space Apps Challenge 2019
-    
+
 */
+
+/* ========== Include files ========== */
 #include <iostream>
 #include <string>
 #include <WiFiClient.h>
@@ -41,51 +43,30 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <HTTPClient.h>
-//#define server "soldier.cloudmqtt.com"
-//#define PORT 14645
 #include <ArduinoJson.h>
 
-//温度センサのライブラリ BME280
-//#include <Wire.h>
-//#include <Adafruit_Sensor.h>
-//#include <Adafruit_BME280.h>
-//#define SEALEVELPRESSURE_HPA (1013.25)
-//Adafruit_BME280 bme; // I2C
 
-/* LED */
+/* ========== Define address pinassign ========== */
 #define ID_TOUCH_SENSE 0x6d
 #define PIN_LED_RED 25
 #define PIN_LED_GREEN 32
 #define PIN_LED_BLUE 33
 
-//StaticJsonBuffer<200> jsonBuffer;
-
+/* ========== Define address NOAA ========== */
 const String endpoint = "https://services.swpc.noaa.gov/products/solar-wind/plasma-5-minute.json";
-//const String key = "yourAPIkey";
 
-//wifi設定//////////////////////////////
+/* ========== Define string value for json ========== */
+StaticJsonDocument<200> doc;
+
+/* ========== Setting Wifi========== */
 WiFiClient httpsClient;
 PubSubClient mqttClient(httpsClient);
-
-
+// SSID & Pass
 const char* ssid = "SACO2019_Monyu";
 const char* password = "asdf1234";
 
 
-///////////////////////////////////////
 
-//温度データの変数
-float temp;
-//温度データをchar型して格納するための配列
-char Tempstring[10];
-char idBuf[20];
-char subscribe_url_char[12];
-//グローバル変数
-String subscribe_url;
-String publish_url;
-String deviceID_str;
-
-StaticJsonDocument<200> doc;
 
 void setup() {
 
@@ -106,7 +87,7 @@ void setup() {
   // MCU to tactile sensor
   Serial2.begin(57600);
 
-
+  // MCU to PC 
   Serial.begin(115200);
 
   //WiFiの設定
@@ -124,6 +105,8 @@ void loop() {
 
   // To handle brigtness led
   int _brightness_led[4] = { 0 };
+
+  // To use plasma temprature
   int temp = 0;
 
 
@@ -144,14 +127,12 @@ void loop() {
 
 
       // pick up data
-
+      // 不要な部分を削除, これを行わないときちんとデータが取り出せない(ESPのバッファエラー？)
       payload.remove(0, 186);
       Serial.print(payload);
 
+      // 10文字目から5文字分を取り出す.
       String sent = payload.substring(10, 5);
-      // Serial.println("-----------------");
-      Serial.print(sent);
-      Serial.print("\n");
 
 
       temp = sent.toInt();
@@ -168,7 +149,7 @@ void loop() {
     }
 
     http.end(); //Free the resources
-  }else{
+  } else {
     digitalWrite(2, LOW);
   }
 
@@ -240,7 +221,7 @@ void loop() {
 
   }
 
-  
+
 
   if (60000 <= temp) {
     // Control led
@@ -256,7 +237,7 @@ void loop() {
     ledcWrite(2, 0);
 
   } else {
-    ledcWrite(0, 255);
+    ledcWrite(0, _brightness_led[2]);
     ledcWrite(1, 30);
     ledcWrite(2,  0);
   }
