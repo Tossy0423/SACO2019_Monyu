@@ -1,0 +1,233 @@
+#include <iostream>
+#include <string>
+
+#include <WiFiClient.h>
+#include <WiFiClientSecure.h>
+#include <WiFi.h>
+#include <PubSubClient.h>
+#include <HTTPClient.h>
+//#define server "soldier.cloudmqtt.com"
+//#define PORT 14645
+#include <ArduinoJson.h>
+
+//温度センサのライブラリ BME280
+//#include <Wire.h>
+//#include <Adafruit_Sensor.h>
+//#include <Adafruit_BME280.h>
+//#define SEALEVELPRESSURE_HPA (1013.25)
+//Adafruit_BME280 bme; // I2C
+
+/* LED */
+#define ID_TOUCH_SENSE 0x6d
+#define PIN_LED_RED 25
+#define PIN_LED_GREEN 32
+#define PIN_LED_BLUE 33
+
+//StaticJsonBuffer<200> jsonBuffer;
+
+const String endpoint = "https://services.swpc.noaa.gov/products/solar-wind/plasma-5-minute.json";
+//const String key = "yourAPIkey";
+
+//wifi設定//////////////////////////////
+WiFiClient httpsClient;
+PubSubClient mqttClient(httpsClient);
+
+//wifi
+
+// const char* ssid = "takudon";
+// const char* password = "utyuyear1444";
+
+const char* ssid = "SpaceAppsWifi-C";
+const char* password = "2019osaka";
+
+
+///////////////////////////////////////
+
+//温度データの変数
+float temp;
+//温度データをchar型して格納するための配列
+char Tempstring[10];
+char idBuf[20];
+char subscribe_url_char[12];
+//グローバル変数
+String subscribe_url;
+String publish_url;
+String deviceID_str;
+
+StaticJsonDocument<200> doc;
+
+void setup() {
+
+  // Set Timer to use led for pwm contorl
+  ledcSetup(0, 12800, 8);
+  ledcAttachPin(PIN_LED_BLUE, 0);
+
+  ledcSetup(1, 12800, 8);
+  ledcAttachPin(PIN_LED_GREEN, 1);
+
+  ledcSetup(2, 12800, 8);
+  ledcAttachPin(PIN_LED_RED, 2);
+
+
+  // On board LED
+  pinMode(2, OUTPUT);
+
+  // MCU to tactile sensor
+  Serial2.begin(57600);
+
+
+  Serial.begin(115200);
+
+  //WiFiの設定
+  WiFi.begin(ssid, password);  //  Wi-Fi APに接続 ----A
+  while (WiFi.status() != WL_CONNECTED) {  //  Wi-Fi AP接続待ち
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.print("WiFi connected\r\nIP address: ");
+  Serial.println(WiFi.localIP());
+
+}
+
+void loop() {
+
+  // To handle brigtness led
+  int _brightness_led[4] = { 0 };
+  int temp = 0;
+
+
+  if ((WiFi.status() == WL_CONNECTED)) {
+
+    HTTPClient http;
+
+    http.begin(endpoint); //URLを指定
+    int httpCode = http.GET();  //GETリクエストを送信
+
+    if (httpCode > 0) { //返答がある場合
+
+      String payload = http.getString();  //返答（JSON形式）を取得
+      // Serial.printf("httoCode=%d\n", httpCode);
+      // Serial.printf("payload=");
+      Serial.print(payload);
+      Serial.printf("\n");
+
+
+      // pick up data
+      // mysubstr(&_pick_temperature, payload, 5);
+      // String.remove()
+      payload.remove(0, 186);
+      Serial.print(payload);
+
+      String sent = payload.substring(10, 5);
+      // Serial.println("-----------------");
+      Serial.print(sent);
+      Serial.print("\n");
+
+
+      temp = sent.toInt();
+      Serial.printf("hehe=%d", temp);
+      Serial.print("\n");
+
+
+
+
+    }
+
+    else {
+      Serial.println("Error on HTTP request");
+    }
+
+    http.end(); //Free the resources
+  }
+
+  // delay(500);   //30秒おきに更新
+
+
+  /* ========== Serial communication from MCU to tactile sensor ========== */
+
+  // Write to tactile sensor
+  Serial2.write(ID_TOUCH_SENSE);
+
+  // Wait To Sampling
+  delayMicroseconds(1260);
+
+  // Receive data from tactile sensor
+  if (0 < Serial2.available())
+  {
+    // Define receive data (uint8_t)
+    uint8_t _r_data_char[10] = { 0 };
+
+    // Receive data
+    for (int i = 0; i < 8; i++)_r_data_char[i] = Serial2.read();
+
+    // DEBUG
+    //Serial.printf("------------------------------\n");
+    //Serial.printf("[DEBUG]: Receive Data(char)\n");
+    //for(int i = 0; i < 8; i++)Serial.printf("[%d] = %d, ", i, _r_data_char[i]);
+    //Serial.print("\n");
+
+    // Define receive data(int)
+    unsigned int _r_data_int[4] = {0};
+
+    // Convert "char" to "int"
+    _r_data_int[0] = _r_data_char[0] << 8 | _r_data_char[1];
+    _r_data_int[1] = _r_data_char[2] << 8 | _r_data_char[3];
+    _r_data_int[2] = _r_data_char[4] << 8 | _r_data_char[5];
+    _r_data_int[3] = _r_data_char[6] << 8 | _r_data_char[7];
+
+    // DEBUG
+    // Serial.printf("------------------------------\n");
+    // Serial.printf("[DEBUG]: Converted Data(int)\n");
+    // for (int i = 0; i < 4; i++)Serial.printf("[%d] = %d, ", i, _r_data_int[i]);
+    // Serial.print("\n");
+
+    // Convert to tactile distance
+    double _tactile_distance[4] = { 0 };
+    _tactile_distance[0] = _r_data_int[0] / 100.0 * 6.0;
+    _tactile_distance[1] = _r_data_int[1] / 100.0 * 6.0;
+    _tactile_distance[2] = _r_data_int[2] / 100.0 * 6.0;
+    _tactile_distance[3] = _r_data_int[3] / 100.0 * 6.0;
+
+    // DEBUG
+    //Serial.printf("------------------------------\n");
+    //Serial.printf("[DEBUG]: Tactile distance(float)\n");
+    //for (int i = 0; i < 4; i++)Serial.printf("[%d] = %0.2f[mm], ", i, _tactile_distance[i]);
+    //Serial.print("\n");
+
+    // Normalization
+    //_brightness_led[0] = map(_tactile_distance[0], 0, 6.0, 0, 255);
+    //_brightness_led[1] = map(_tactile_distance[1], 0, 6.0, 0, 255);
+    //_brightness_led[2] = map(_tactile_distance[2], 0, 6.0, 0, 255);
+    //_brightness_led[3] = map(_tactile_distance[3], 0, 6.0, 0, 255);
+
+    //_brightness_led[0] = map(temp, 50000, 85000, 0, 255);
+    //_brightness_led[1] = map(temp, 50000, 85000, 0, 255);
+    //_brightness_led[2] = map(temp, 50000, 85000, 0, 255);
+    //_brightness_led[3] = map(temp, 50000, 85000, 0, 255);
+
+
+  }
+
+  
+
+  if (60000 <= temp) {
+    // Control led
+    ledcWrite(0, 0);   // Blue
+    ledcWrite(1, 20);   // Green
+    ledcWrite(2, 255);   // Red
+
+  } else if (50000 <= temp && temp <= 59999) {
+
+    // Control led
+    ledcWrite(0, 255);
+    ledcWrite(1, 30);
+    ledcWrite(2, 0);
+
+  } else {
+    ledcWrite(0, 255);
+    ledcWrite(1, 30);
+    ledcWrite(2,  0);
+  }
+
+
+}
